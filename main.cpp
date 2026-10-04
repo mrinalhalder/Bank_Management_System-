@@ -32,13 +32,13 @@ public:
         this->accountNumber = accountNumber;
         this->balance = balance;
     }
-    
+
     static void addAccount(const Account& user) {
         totalAccount++;
         totalBalance += user.balance;
     }
 
-    void saveToFile(ofstream& accFile) {
+    void saveToFile(ofstream& accFile) const {
         accFile << name << '|'
                 << accountType << '|'
                 << address << '|'
@@ -46,7 +46,7 @@ public:
                 << accountNumber << '|'
                 << balance << '\n';
     }
-    
+
     /**
     void readToFile(ifstream& accFile) {
         file >> name;
@@ -57,7 +57,7 @@ public:
         file >> balance;
     }
     **/
-    
+
     void display() {
         cout << "Name: " << name << endl;
         cout << "Account Number: " << accountNumber << endl;
@@ -80,6 +80,10 @@ public:
     void deposit(double amount) {
         balance += amount;
         totalBalance += amount;
+    }
+
+    int getAccountNumber() const {
+        return accountNumber;
     }
 
     static int getTotalAccount() {
@@ -120,15 +124,15 @@ int processData(vector<Account>& users);
 
 // File Management Function
 void storeDataInFile(const vector<Account>& users);
-//void readDataInFile(vector<Account>& users);
+bool readDataInFile(vector<Account>& users);
 
 // Creat Acount Function
 Account readAccountInfo();
 
 int main() {
     vector<Account> users;
-    //readDataInFile(users);
-    
+    readDataInFile(users);
+
     while(true) {
         if(processData(users) == 1) {
             break;
@@ -139,7 +143,7 @@ int main() {
 }
 
 void ui() {
-    cout << "\n";
+    //cout << "\n";
     cout << "========================================\n";
     cout << "        BANK MANAGEMENT SYSTEM\n";
     cout << "========================================\n";
@@ -252,44 +256,73 @@ int processData(vector<Account>& users) {
 // File Management Function
 void storeDataInFile(const vector<Account>& users) {
     ofstream accFile("AccountInfo.txt");
-    ofstream bankFile("BankInfo.txt");
 
-    if (!accFile || !bankFile) {
+    if (!accFile) {
         cout << "File could not be opened!" << endl;
         return;
     }
 
-    for(const auto user : users) {
+    for(auto user : users) {
         user.saveToFile(accFile);
     }
 
-    bankFile << Account::getTotalAccount() << '|'
-             << Account::getTotalBalance() << "\n";
-
     accFile.close();
-    bankFile.close();
-    cout << "Data saved successfully!\n";
+    cout << "\nData saved successfully!\n";
 }
 
-/**
-void readDataInFile(vector<Account>& users) {
-    ifstream file("AccountInfo.txt");
+bool readDataInFile(vector<Account>& users) {
+    ifstream accFile("AccountInfo.txt");
 
-    if (!file) {
-        cout << "File could not be opened!" << endl;
-        return;
+    if (!accFile) {
+        return false;
     }
 
-    //users.readToFile(file);
-    file.close();
+    string line;
+
+    while (getline(accFile, line)) {
+        // When line is empty then data is not store and keep moving next
+        if (line.empty()) continue;
+        
+        // Convert line to stream 
+        stringstream ss(line);
+        tempAccount data; // A temporal structured datatype
+        
+        // A temporal string variable
+        string accNumStr, balanceStr;
+
+        getline(ss, data.name, '|');
+        getline(ss, data.accountType, '|');
+        getline(ss, data.address, '|');
+        getline(ss, data.phoneNumber, '|');
+        getline(ss, accNumStr, '|');
+        getline(ss, balanceStr, '\n');
+
+        if (!accNumStr.empty() && !balanceStr.empty()) {
+            data.accountNumber = stoi(accNumStr);
+            data.balance = stod(balanceStr);
+
+            Account user(
+                data.name,
+                data.accountType,
+                data.address,
+                data.phoneNumber,
+                data.accountNumber,
+                data.balance
+            );
+
+            users.push_back(user);
+            Account::addAccount(user);
+        }
+    }
+
+    accFile.close();
+
+    // cout << "Account data loaded successfully!" << endl;
+    return true;
 }
-**/
 
 Account readAccountInfo() {
     tempAccount accData;
-
-    // Clear buffer
-    cin.ignore(numeric_limits<streamsize>::max(), '\n');
 
     cout << "Enter your name: ";
     getline(cin, accData.name);
@@ -319,6 +352,7 @@ Account readAccountInfo() {
         accData.accountNumber,
         accData.balance
     );
-    
+
     return user;
 }
+    

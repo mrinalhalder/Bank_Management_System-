@@ -67,3 +67,15 @@ vcpkg_installed/
 # test output & cache
 Testing/
 .cache/
+
+# Compiled Executable Binary Files
+bank
+*.out
+*.exe
+*.o
+
+# Program Data Files
+*.txt
+
+# Temporary Scratchpad Code
+Temp.cpp
