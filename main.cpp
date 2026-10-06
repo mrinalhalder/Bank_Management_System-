@@ -6,6 +6,7 @@
 #include <string>
 #include <iomanip>
 #include <algorithm>
+#include <cctype>
 using namespace std;
 
 class Account {
@@ -75,9 +76,9 @@ public:
             cout << "Amount must be greater than zero!\n";
             return;
         }
-        
+
         double balanceD = stod(balance);
-        
+
         if(amount <= balanceD) {
             balanceD -= amount;
             balance = doubleToMoney(balanceD);
@@ -93,10 +94,10 @@ public:
             cout << "Amount must be greater than zero!\n";
             return;
         }
-        
+
         double balanceD = stod(balance);
         balanceD += amount;
-        
+
         balance = doubleToMoney(balanceD);
         updateTotalBalance('+', amount);
     }
@@ -109,6 +110,10 @@ public:
 
     int getAccountNumber() const {
         return accountNumber;
+    }
+
+    string getPhoneNumber() const {
+        return phoneNumber;
     }
 
     static int getTotalAccount() {
@@ -152,13 +157,18 @@ void storeDataInFile(const vector<Account>& users);
 bool readDataInFile(vector<Account>& users);
 
 // Creat Acount Function
-Account readAccountInfo();
+bool readAccountInfo(vector<Account>& users);
 
 // Sub account functions
 void readStr(string& str, string type);
-bool readAccountNumber(vector<Account>& acc, const int& index);
-bool readPhoneNumber(string& phone);
+int readAccountNumber(const vector<Account>& acc);
+
+string readPhoneNumber(const vector<Account>& acc);
+bool isUniquePhoneNumber(const vector<Account>& acc, const string& ph);
+bool isValidPhoneNumber(const string& ph);
+
 bool readBalance(double& balance);
+
 
 int main() {
     vector<Account> users;
@@ -170,6 +180,7 @@ int main() {
         }
     }
 
+    storeDataInFile(users);
     return 0;
 }
 
@@ -239,22 +250,11 @@ int processData(vector<Account>& users) {
 
     switch (choice) {
     case 1: {
-        Account user = readAccountInfo();
-
-        auto it = lower_bound(
-                      users.begin(),
-                      users.end(),
-                      user.getAccountNumber(),
-        [](const Account& acc, int accountNumber) {
-            return
-                acc.getAccountNumber() < accountNumber;
+        if(!readAccountInfo(users)) {
+            return 0;
         }
-                  );
-        users.insert(it, user);
 
-        Account::addAccount(user);
-        storeDataInFile(users);
-
+        cout << "\nAccount created successfully!\n";
         break;
     }
     case 2: {
@@ -310,7 +310,6 @@ void storeDataInFile(const vector<Account>& users) {
     }
 
     accFile.close();
-    cout << "\nData saved successfully!\n";
 }
 
 bool readDataInFile(vector<Account>& users) {
@@ -362,26 +361,26 @@ bool readDataInFile(vector<Account>& users) {
     return true;
 }
 
-Account readAccountInfo() {
+bool readAccountInfo(vector<Account>& users) {
     tempAccount accData;
 
     readStr(accData.name, "Name");
-    cout << "Enter Account Number: ";
-    cin >> accData.accountNumber;
+    int accNum = readAccountNumber(users);
 
-    cout << "Enter Account Type (Savings/Current): ";
-    cin >> accData.accountType;
+    if(accNum == -1) {
+        return false;
+    }
 
-    cin.ignore(numeric_limits<streamsize>::max(), '\n');
-    cout << "Enter Your Address: ";
-    getline(cin, accData.address);
+    accData.accountNumber = accNum;
+    readStr(accData.accountType, "Account Type");
+    readStr(accData.address, "Address");
+    string result = readPhoneNumber(users);
 
-    cout << "Enter Your Phone Number: ";
-    cin >> accData.phoneNumber;
+    if(result == "error") return false;
+    accData.phoneNumber = result;
 
     cout << "Add Initial Balance: ";
     cin >> accData.balance;
-    cin.ignore(numeric_limits<streamsize>::max(), '\n');
 
     Account user(
         accData.name,
@@ -392,7 +391,20 @@ Account readAccountInfo() {
         accData.balance
     );
 
-    return user;
+    auto it = lower_bound(
+                  users.begin(),
+                  users.end(),
+                  user.getAccountNumber(),
+    [](const Account& acc, int accountNumber) {
+        return
+            acc.getAccountNumber() < accountNumber;
+    }
+              );
+
+    users.insert(it, user);
+    Account::addAccount(user);
+
+    return true;
 }
 
 void readStr(string& str, string type) {
@@ -403,14 +415,95 @@ void readStr(string& str, string type) {
     str.erase(remove(str.begin(), str.end(), '|'), str.end());
 }
 
-bool readAccountNumber(vector<Account>& acc, const int& index) {
+int readAccountNumber(const vector<Account>& acc) {
+    int attempt = 0;
+    int accNumber;
 
-    return true;
+    while(true) {
+        attempt++;
+        if(attempt > 3) {
+            cout << "\nTo many invalid inputs are given!" << endl;
+            cout << "So the program is back to main menu." << endl;
+            return -1;
+        }
+
+        cout << "Enter Account Number: ";
+        cin >> accNumber;
+
+        if (cin.fail()) {
+            cin.clear();
+            // Clear the entire input buffer
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
+            if(attempt < 3)
+                cout << "Invalid input! Please enter a number.\n\n";
+            continue;
+        }
+
+        if (accNumber <= 0 || accNumber > 999999) {
+            if(attempt < 3) {
+                cout << "\nInvalid Input!\n";
+                cout << "Number must be between 1 and 999999\n\n";
+            }
+            continue;
+        }
+
+        auto it = lower_bound(acc.begin(), acc.end(),
+        accNumber, [](const Account& account, int accNumber) {
+            return account.getAccountNumber() < accNumber;
+        });
+
+        if (it != acc.end() && it->getAccountNumber() == accNumber) {
+            if(attempt < 3) {
+                cout << "Account number already exists!\n";
+                // Clear remaining characters from buffer
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            }
+            continue;
+        }
+
+        break;
+    }
+
+    // Clear remaining characters from buffer
+    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+    return accNumber;
 }
 
-bool readPhoneNumber(string& phone) {
+string readPhoneNumber(const vector<Account>& acc) {
+    int attempt = 0;
+    string phone;
 
-    return true;
+    while(true) {
+        attempt++;
+        if(attempt > 3) {
+            cout << "\nTo many invalid inputs are given!" << endl;
+            cout << "So the program is back to main menu." << endl;
+            return "error";
+        }
+
+        cout << "Enter Phone Number: ";
+        getline(cin, phone);
+
+        if(!isValidPhoneNumber(phone)) {
+            if(attempt < 3) {
+                cout << "\nInvalid Input!\n";
+                cout << "Please enter a valid Phone number\n";
+            }
+            continue;
+        }
+
+        if(!isUniquePhoneNumber(acc, phone)) {
+            if(attempt < 3) {
+                cout << "Phone number already exists!\n";
+            }
+            continue;
+        }
+
+        break;
+    }
+
+    return phone;
 }
 
 bool readBalance(double& balance) {
@@ -418,3 +511,22 @@ bool readBalance(double& balance) {
     return true;
 }
 
+// Helper Phone Number Function
+bool isValidPhoneNumber(const string& ph) {
+    if (ph.length() != 10) {
+        return false;
+    }
+
+    for(const auto& ch : ph) {
+        if(!isdigit(ch)) return false;
+    }
+
+    return true;
+}
+
+bool isUniquePhoneNumber(const vector<Account>& acc, const string& ph) {
+    for(const auto& account : acc) {
+        if(account.getPhoneNumber() == ph) return false;
+    }
+    return true;
+}
