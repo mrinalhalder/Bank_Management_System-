@@ -4,10 +4,9 @@
 #include <fstream>
 #include <sstream>
 #include <string>
-
+#include <iomanip>
+#include <algorithm>
 using namespace std;
-
-//string ud = "undefined";
 
 class Account {
     string name;
@@ -43,25 +42,16 @@ public:
                 << accountType << '|'
                 << address << '|'
                 << phoneNumber << '|'
-                << accountNumber << '|'
+                << accountNumber << '|';
+        accFile << fixed << setprecision(2)
                 << balance << '\n';
     }
-
-    /**
-    void readToFile(ifstream& accFile) {
-        file >> name;
-        file >> accountType;
-        file >> address;
-        file >> phoneNumber;
-        file >> accountNumber;
-        file >> balance;
-    }
-    **/
 
     void display() {
         cout << "Name: " << name << endl;
         cout << "Account Number: " << accountNumber << endl;
-        cout << "Bank Balance: " << balance << endl;
+        cout << fixed << setprecision(2)
+             << "Bank Balance: " << balance << endl;
         cout << "Account Type: " << accountType << endl;
         cout << "Phone Number: " << phoneNumber << endl;
         cout << "Address: " << address << endl;
@@ -110,6 +100,7 @@ struct tempAccount {
 };
 
 void bankInfo() {
+    cout << fixed << setprecision(2);
     cout << "Total Bank Balance: " << Account::getTotalBalance() << endl;
     cout << "Total Bank Account: " << Account::getTotalAccount() << endl;
 }
@@ -128,6 +119,12 @@ bool readDataInFile(vector<Account>& users);
 
 // Creat Acount Function
 Account readAccountInfo();
+
+// Sub account functions
+void readStr(string& str, string type);
+bool readAccountNumber(int& acc);
+bool readPhoneNumber(string& phone);
+bool readBalance(double& balance);
 
 int main() {
     vector<Account> users;
@@ -208,10 +205,22 @@ int processData(vector<Account>& users) {
 
     switch (choice) {
     case 1: {
-        // cout << "Create Account\n";
-        users.push_back(readAccountInfo());
-        Account::addAccount(users.back());
+        Account user = readAccountInfo();
+
+        auto it = lower_bound(
+                      users.begin(),
+                      users.end(),
+                      user.getAccountNumber(),
+        [](const Account& acc, int accountNumber) {
+            return
+                acc.getAccountNumber() < accountNumber;
+        }
+                  );
+        users.insert(it, user);
+
+        Account::addAccount(user);
         storeDataInFile(users);
+
         break;
     }
     case 2: {
@@ -282,11 +291,11 @@ bool readDataInFile(vector<Account>& users) {
     while (getline(accFile, line)) {
         // When line is empty then data is not store and keep moving next
         if (line.empty()) continue;
-        
-        // Convert line to stream 
+
+        // Convert line to stream
         stringstream ss(line);
         tempAccount data; // A temporal structured datatype
-        
+
         // A temporal string variable
         string accNumStr, balanceStr;
 
@@ -324,9 +333,7 @@ bool readDataInFile(vector<Account>& users) {
 Account readAccountInfo() {
     tempAccount accData;
 
-    cout << "Enter your name: ";
-    getline(cin, accData.name);
-
+    readStr(accData.name, "Name");
     cout << "Enter Account Number: ";
     cin >> accData.accountNumber;
 
@@ -355,4 +362,27 @@ Account readAccountInfo() {
 
     return user;
 }
-    
+
+void readStr(string& str, string type) {
+    cout << "Enter " << type << ": ";
+    getline(cin, str);
+
+    // Remove all pipe '|' character in a string
+    str.erase(remove(str.begin(), str.end(), '|'), str.end());
+}
+
+bool readAccountNumber(int& acc) {
+
+    return true;
+}
+
+bool readPhoneNumber(string& phone) {
+
+    return true;
+}
+
+bool readBalance(double& balance) {
+
+    return true;
+}
+
