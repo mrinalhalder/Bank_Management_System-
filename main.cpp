@@ -13,16 +13,16 @@ class Account {
     string accountType;
     string address;
     string phoneNumber;
-    double balance;
+    string balance;
     int accountNumber;
 
     static int totalAccount;
-    static double totalBalance;
+    static string totalBalance;
 
 public:
     Account(string name, string accountType,
             string address, string phoneNumber,
-            int accountNumber, double balance)
+            int accountNumber, string balance)
     {
         this->name = name;
         this->accountType = accountType;
@@ -34,7 +34,22 @@ public:
 
     static void addAccount(const Account& user) {
         totalAccount++;
-        totalBalance += user.balance;
+        updateTotalBalance('+', stod(user.balance));
+    }
+
+    static void updateTotalBalance(char type, double balance) {
+        double totalAmount = stod(totalBalance);
+
+        if(type == '+') {
+            totalAmount += balance;
+        } else if(type == '-') {
+            totalAmount -= balance;
+        } else {
+            cout << "Invalid Arithmetic Operation!" << endl;
+            return;
+        }
+
+        totalBalance = doubleToMoney(totalAmount);
     }
 
     void saveToFile(ofstream& accFile) const {
@@ -42,25 +57,31 @@ public:
                 << accountType << '|'
                 << address << '|'
                 << phoneNumber << '|'
-                << accountNumber << '|';
-        accFile << fixed << setprecision(2)
+                << accountNumber << '|'
                 << balance << '\n';
     }
 
     void display() {
         cout << "Name: " << name << endl;
         cout << "Account Number: " << accountNumber << endl;
-        cout << fixed << setprecision(2)
-             << "Bank Balance: " << balance << endl;
+        cout << "Bank Balance: " << balance << endl;
         cout << "Account Type: " << accountType << endl;
         cout << "Phone Number: " << phoneNumber << endl;
         cout << "Address: " << address << endl;
     }
 
     void withdraw(double amount) {
-        if(amount <= balance) {
-            balance -= amount;
-            totalBalance -= amount;
+        if(amount <= 0) {
+            cout << "Amount must be greater than zero!\n";
+            return;
+        }
+        
+        double balanceD = stod(balance);
+        
+        if(amount <= balanceD) {
+            balanceD -= amount;
+            balance = doubleToMoney(balanceD);
+            updateTotalBalance('-', amount);
         }
         else {
             cout << "You have not enough money to withdrawal!" << endl;
@@ -68,8 +89,22 @@ public:
     }
 
     void deposit(double amount) {
-        balance += amount;
-        totalBalance += amount;
+        if(amount <= 0) {
+            cout << "Amount must be greater than zero!\n";
+            return;
+        }
+        
+        double balanceD = stod(balance);
+        balanceD += amount;
+        
+        balance = doubleToMoney(balanceD);
+        updateTotalBalance('+', amount);
+    }
+
+    static string doubleToMoney(double amount) {
+        ostringstream oss;
+        oss << fixed << setprecision(2) << amount;
+        return oss.str();
     }
 
     int getAccountNumber() const {
@@ -80,13 +115,13 @@ public:
         return totalAccount;
     }
 
-    static double getTotalBalance() {
+    static string getTotalBalance() {
         return totalBalance;
     }
 
     static void deleteAccount(const Account& user) {
         totalAccount--;
-        totalBalance -= user.balance;
+        updateTotalBalance('-', stod(user.balance));
     }
 };
 
@@ -96,17 +131,16 @@ struct tempAccount {
     string address;
     string phoneNumber;
     int accountNumber;
-    double balance;
+    string balance;
 };
 
 void bankInfo() {
-    cout << fixed << setprecision(2);
     cout << "Total Bank Balance: " << Account::getTotalBalance() << endl;
     cout << "Total Bank Account: " << Account::getTotalAccount() << endl;
 }
 
 int Account::totalAccount = 0;
-double Account::totalBalance = 0;
+string Account::totalBalance = "0";
 
 // User Helper Function
 void ui();
@@ -122,7 +156,7 @@ Account readAccountInfo();
 
 // Sub account functions
 void readStr(string& str, string type);
-bool readAccountNumber(int& acc);
+bool readAccountNumber(vector<Account>& acc, const int& index);
 bool readPhoneNumber(string& phone);
 bool readBalance(double& balance);
 
@@ -271,7 +305,7 @@ void storeDataInFile(const vector<Account>& users) {
         return;
     }
 
-    for(auto user : users) {
+    for(const auto& user : users) {
         user.saveToFile(accFile);
     }
 
@@ -287,7 +321,6 @@ bool readDataInFile(vector<Account>& users) {
     }
 
     string line;
-
     while (getline(accFile, line)) {
         // When line is empty then data is not store and keep moving next
         if (line.empty()) continue;
@@ -297,18 +330,17 @@ bool readDataInFile(vector<Account>& users) {
         tempAccount data; // A temporal structured datatype
 
         // A temporal string variable
-        string accNumStr, balanceStr;
+        string accNumStr;
 
         getline(ss, data.name, '|');
         getline(ss, data.accountType, '|');
         getline(ss, data.address, '|');
         getline(ss, data.phoneNumber, '|');
         getline(ss, accNumStr, '|');
-        getline(ss, balanceStr, '\n');
+        getline(ss, data.balance, '\n');
 
-        if (!accNumStr.empty() && !balanceStr.empty()) {
+        if (!accNumStr.empty() && !data.balance.empty()) {
             data.accountNumber = stoi(accNumStr);
-            data.balance = stod(balanceStr);
 
             Account user(
                 data.name,
@@ -371,7 +403,7 @@ void readStr(string& str, string type) {
     str.erase(remove(str.begin(), str.end(), '|'), str.end());
 }
 
-bool readAccountNumber(int& acc) {
+bool readAccountNumber(vector<Account>& acc, const int& index) {
 
     return true;
 }
