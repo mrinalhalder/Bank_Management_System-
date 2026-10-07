@@ -167,7 +167,7 @@ string readPhoneNumber(const vector<Account>& acc);
 bool isUniquePhoneNumber(const vector<Account>& acc, const string& ph);
 bool isValidPhoneNumber(const string& ph);
 
-bool readBalance(double& balance);
+bool readBalance(string& balance);
 
 
 int main() {
@@ -211,7 +211,7 @@ int readUserChoice() {
     while(true) {
         attempt++;
         if(attempt > 3) {
-            cout << "\nTo many invalid inputs are given!" << endl;
+            cout << "\nToo many invalid inputs were given!" << endl;
             cout << "So the program is back to main menu." << endl;
             return 0;
         }
@@ -253,7 +253,6 @@ int processData(vector<Account>& users) {
         if(!readAccountInfo(users)) {
             return 0;
         }
-
         cout << "\nAccount created successfully!\n";
         break;
     }
@@ -378,9 +377,7 @@ bool readAccountInfo(vector<Account>& users) {
 
     if(result == "error") return false;
     accData.phoneNumber = result;
-
-    cout << "Add Initial Balance: ";
-    cin >> accData.balance;
+    if(!readBalance(accData.balance)) return false;
 
     Account user(
         accData.name,
@@ -422,7 +419,7 @@ int readAccountNumber(const vector<Account>& acc) {
     while(true) {
         attempt++;
         if(attempt > 3) {
-            cout << "\nTo many invalid inputs are given!" << endl;
+            cout << "\nToo many invalid inputs were given!" << endl;
             cout << "So the program is back to main menu." << endl;
             return -1;
         }
@@ -477,7 +474,7 @@ string readPhoneNumber(const vector<Account>& acc) {
     while(true) {
         attempt++;
         if(attempt > 3) {
-            cout << "\nTo many invalid inputs are given!" << endl;
+            cout << "\nToo many invalid inputs were given!" << endl;
             cout << "So the program is back to main menu." << endl;
             return "error";
         }
@@ -488,14 +485,14 @@ string readPhoneNumber(const vector<Account>& acc) {
         if(!isValidPhoneNumber(phone)) {
             if(attempt < 3) {
                 cout << "\nInvalid Input!\n";
-                cout << "Please enter a valid Phone number\n";
+                cout << "Please enter a valid Phone number\n\n";
             }
             continue;
         }
 
         if(!isUniquePhoneNumber(acc, phone)) {
             if(attempt < 3) {
-                cout << "Phone number already exists!\n";
+                cout << "Phone number already exists!\n\n";
             }
             continue;
         }
@@ -506,11 +503,6 @@ string readPhoneNumber(const vector<Account>& acc) {
     return phone;
 }
 
-bool readBalance(double& balance) {
-
-    return true;
-}
-
 // Helper Phone Number Function
 bool isValidPhoneNumber(const string& ph) {
     if (ph.length() != 10) {
@@ -518,7 +510,7 @@ bool isValidPhoneNumber(const string& ph) {
     }
 
     for(const auto& ch : ph) {
-        if(!isdigit(ch)) return false;
+        if(!isdigit(static_cast<unsigned char>(ch))) return false;
     }
 
     return true;
@@ -530,3 +522,48 @@ bool isUniquePhoneNumber(const vector<Account>& acc, const string& ph) {
     }
     return true;
 }
+
+bool readBalance(string& balance) {
+    int attempt = 0;
+
+    while(true) {
+        attempt++;
+        if(attempt > 3) {
+            cout << "\nToo many invalid inputs were given!" << endl;
+            cout << "So the program is back to main menu." << endl;
+            return false;
+        }
+
+        cout << "Add Initial Balance: ";
+        cin >> balance;
+
+        try {
+            size_t pos;
+            double  amount = stod(balance, &pos);
+
+            if(pos != balance.length()) {
+                throw invalid_argument("Invalid input");
+            }
+
+            if(amount <= 0) {
+                if(attempt < 3) {
+                    cout << "\nInvalid Input!\n";
+                    cout << "Balance must be greater than zero.\n\n";
+                }
+                continue;
+            }
+
+            balance = Account::doubleToMoney(amount);
+            break;
+        }
+        catch(...) {
+            if(attempt < 3) {
+                cout << "\nInvalid Input!\n";
+                cout << "Please enter a valid balance.\n\n";
+            }
+        }
+    }
+
+    return true;
+}
+
