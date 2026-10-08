@@ -62,13 +62,22 @@ public:
                 << balance << '\n';
     }
 
-    void display() {
+    void display() const {
         cout << "Name: " << name << endl;
         cout << "Account Number: " << accountNumber << endl;
         cout << "Bank Balance: " << balance << endl;
         cout << "Account Type: " << accountType << endl;
         cout << "Phone Number: " << phoneNumber << endl;
         cout << "Address: " << address << endl;
+    }
+
+    void viewDisplay() const {
+        cout << left
+             << setw(12)  << accountNumber
+             << setw(18) << name
+             << setw(12) << accountType
+             << balance
+             << '\n';
     }
 
     void withdraw(double amount) {
@@ -158,17 +167,18 @@ bool readDataInFile(vector<Account>& users);
 
 // Creat Acount Function
 bool readAccountInfo(vector<Account>& users);
-
 // Sub account functions
 void readStr(string& str, string type);
 int readAccountNumber(const vector<Account>& acc);
-
 string readPhoneNumber(const vector<Account>& acc);
+// Helper function to valid phone number
 bool isUniquePhoneNumber(const vector<Account>& acc, const string& ph);
 bool isValidPhoneNumber(const string& ph);
-
+// Get valid Balence
 bool readBalance(string& balance);
 
+// View all accounts
+void viewAllAccounts(const vector<Account>& users);
 
 int main() {
     vector<Account> users;
@@ -179,8 +189,8 @@ int main() {
             break;
         }
     }
-
     storeDataInFile(users);
+
     return 0;
 }
 
@@ -201,7 +211,7 @@ void ui() {
     cout << "8. Bank Information\n";
     cout << "9. Exit\n";
 
-    cout << "\n----------------------------------------\n";
+    cout << "-------------------------------------------------\n";
 }
 
 int readUserChoice() {
@@ -257,7 +267,8 @@ int processData(vector<Account>& users) {
         break;
     }
     case 2: {
-        cout << "View Account\n";
+        //cout << "View Account\n";
+        viewAllAccounts(users);
         break;
     }
     case 3: {
@@ -360,6 +371,7 @@ bool readDataInFile(vector<Account>& users) {
     return true;
 }
 
+// Read valid account details
 bool readAccountInfo(vector<Account>& users) {
     tempAccount accData;
 
@@ -523,6 +535,7 @@ bool isUniquePhoneNumber(const vector<Account>& acc, const string& ph) {
     return true;
 }
 
+// Get valid Balence
 bool readBalance(string& balance) {
     int attempt = 0;
 
@@ -567,3 +580,26 @@ bool readBalance(string& balance) {
     return true;
 }
 
+// View all accounts
+void viewAllAccounts(const vector<Account>& users) {
+    if(users.size() == 0) {
+        cout << "\nNo account is available!\n";
+        cout << "Please creat a account first.\n";
+        cout << "\n";
+        return;
+    }
+
+    cout << "\n";
+    cout << left
+         << setw(12) << "Acc.No."
+         << setw(18) << "Name"
+         << setw(12) << "Type"
+         << "Balance\n";
+
+    cout << "-------------------------------------------------\n";
+
+    for(const auto& user : users) {
+        user.viewDisplay();
+    }
+    cout << endl;
+}
