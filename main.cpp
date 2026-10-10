@@ -162,7 +162,7 @@ public:
         return totalBalance;
     }
 
-    static void deleteAccount(const Account& user) {
+    static void deleteAcc(Account& user) {
         totalAccount--;
         updateTotalBalance('-', stod(user.balance));
     }
@@ -210,9 +210,12 @@ bool readBalance(string& balance, const string& name);
 void viewAllAccounts(const vector<Account>& users);
 void searchAccount(const vector<Account>& users);
 
-// Withdrawal & deposite function
+// Withdrawal & Deposite function
 void withdrawalMoney(vector<Account>& users);
 void depositeMoney(vector<Account>& users);
+
+// Update & Delete function 
+void deleteAccount(vector<Account>& users);
 
 int main() {
     vector<Account> users;
@@ -322,7 +325,7 @@ int processData(vector<Account>& users) {
         break;
     }
     case 7: {
-        cout << "Delete Account\n";
+        deleteAccount(users);
         break;
     }
     case 8: {
@@ -427,7 +430,8 @@ bool readDataInFile(vector<Account>& users) {
 // Read valid account details
 bool readAccountInfo(vector<Account>& users) {
     tempAccount accData;
-
+    
+    cout << endl;
     readStr(accData.name, "Name");
     int accNum = readAccountNumber(users);
 
@@ -726,4 +730,37 @@ void depositeMoney(vector<Account>& users) {
         cout << "Account not found!\n";
     }
     cout << endl;
+}
+
+// Update & Delete function 
+void deleteAccount(vector<Account>& users) {
+    cout << endl;
+
+    if (users.empty()) {
+        cout << "No account is available to delete!\n";
+        return;
+    }
+
+    int accNumber = readAccountNumber(users, true);
+    if (accNumber == -1) return;
+
+    auto it = lower_bound(
+        users.begin(),
+        users.end(),
+        accNumber,
+        [](const Account& account, int accNumber) {
+            return account.getAccountNumber() < accNumber;
+        }
+    );
+
+    if (it != users.end() &&
+        it->getAccountNumber() == accNumber) {
+        Account::deleteAcc(*it);
+        users.erase(it);
+
+        cout << "Account deleted successfully!\n";
+    }
+    else {
+        cout << "Account not found!\n";
+    }
 }
