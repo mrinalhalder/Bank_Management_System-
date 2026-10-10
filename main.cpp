@@ -326,7 +326,11 @@ int processData(vector<Account>& users) {
         break;
     }
     case 8: {
-        bankInfo();
+        cout << endl;
+        cout << "Total Bank Accounts: " << Account::getTotalAccount() << endl;
+        cout << "Total Bank Balance: " << Account::getTotalBalance() << endl;
+        cout << endl;
+        
         break;
     }
     case 9: {
