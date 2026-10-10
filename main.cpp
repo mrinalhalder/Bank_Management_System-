@@ -106,10 +106,10 @@ public:
              << '\n';
     }
 
-    void withdraw(double amount) {
-        if(amount <= 0) {
+    bool withdraw(double amount) {
+        if (!isfinite(amount) || amount <= 0) {
             cout << "Amount must be greater than zero!\n";
-            return;
+            return false;
         }
 
         double balanceD = stod(balance);
@@ -118,16 +118,17 @@ public:
             balanceD -= amount;
             balance = doubleToMoney(balanceD);
             updateTotalBalance('-', amount);
+            return true;
         }
-        else {
-            cout << "You don't have enough money to withdraw!" << endl;
-        }
+
+        cout << "You don't have enough money to withdraw!" << endl;
+        return false;
     }
 
-    void deposit(double amount) {
-        if(amount <= 0) {
+    bool deposit(double amount) {
+        if (!isfinite(amount) || amount <= 0) {
             cout << "Amount must be greater than zero!\n";
-            return;
+            return false;
         }
 
         double balanceD = stod(balance);
@@ -135,6 +136,8 @@ public:
 
         balance = doubleToMoney(balanceD);
         updateTotalBalance('+', amount);
+
+        return true;
     }
 
     static string doubleToMoney(double amount) {
@@ -170,8 +173,8 @@ struct tempAccount {
     string accountType;
     string address;
     string phoneNumber;
-    int accountNumber;
     string balance;
+    int accountNumber;
 };
 
 void bankInfo() {
@@ -201,13 +204,15 @@ string readPhoneNumber(const vector<Account>& acc);
 bool isUniquePhoneNumber(const vector<Account>& acc, const string& ph);
 bool isValidPhoneNumber(const string& ph);
 // Get valid Balence
-bool readBalance(string& balance);
+bool readBalance(string& balance, const string& name);
 
 // View & Search function
 void viewAllAccounts(const vector<Account>& users);
 void searchAccount(const vector<Account>& users);
 
-//
+// Withdrawal & deposite function
+void withdrawalMoney(vector<Account>& users);
+void depositeMoney(vector<Account>& users);
 
 int main() {
     vector<Account> users;
@@ -305,11 +310,11 @@ int processData(vector<Account>& users) {
         break;
     }
     case 4: {
-        cout << "Deposit Money\n";
+        depositeMoney(users);
         break;
     }
     case 5: {
-        cout << "Withdraw Money\n";
+        withdrawalMoney(users);
         break;
     }
     case 6: {
@@ -433,7 +438,7 @@ bool readAccountInfo(vector<Account>& users) {
 
     if(result == "error") return false;
     accData.phoneNumber = result;
-    if(!readBalance(accData.balance)) return false;
+    if(!readBalance(accData.balance, "Add Initial Balance")) return false;
 
     Account user(
         accData.name,
@@ -581,7 +586,7 @@ bool isUniquePhoneNumber(const vector<Account>& acc, const string& ph) {
 }
 
 // Get valid Balence
-bool readBalance(string& balance) {
+bool readBalance(string& balance, const string& name) {
     int attempt = 0;
 
     while(true) {
@@ -592,7 +597,7 @@ bool readBalance(string& balance) {
             return false;
         }
 
-        cout << "Add Initial Balance: ";
+        cout << name << ": ";
         cin >> balance;
 
         try {
@@ -663,6 +668,55 @@ void searchAccount(const vector<Account>& users) {
 
     if(it != users.end() && it->getAccountNumber() == accNumber) {
         it->display();
+    }
+    else {
+        cout << "Account not found!\n";
+    }
+    cout << endl;
+}
+
+// Withdrawal & deposite function
+void withdrawalMoney(vector<Account>& users) {
+    cout << endl;
+    int accNumber = readAccountNumber(users, true);
+    if(accNumber == -1) return;
+
+    auto it = lower_bound(users.begin(), users.end(),
+    accNumber, [](const Account& account, int accNumber) {
+        return account.getAccountNumber() < accNumber;
+    });
+
+    if(it != users.end() && it->getAccountNumber() == accNumber) {
+        string balance;
+        if(!readBalance(balance, "Enter Withdrawal Amount")) return;
+        if (it->withdraw(stod(balance))) {
+            cout << "\nWithdrawal successful!\n";
+            cout << "Withdrawn Amount: Rs. " << balance << '\n';
+        }
+    }
+    else {
+        cout << "Account not found!\n";
+    }
+    cout << endl;
+}
+
+void depositeMoney(vector<Account>& users) {
+    cout << endl;
+    int accNumber = readAccountNumber(users, true);
+    if(accNumber == -1) return;
+
+    auto it = lower_bound(users.begin(), users.end(),
+    accNumber, [](const Account& account, int accNumber) {
+        return account.getAccountNumber() < accNumber;
+    });
+
+    if(it != users.end() && it->getAccountNumber() == accNumber) {
+        string balance;
+        if(!readBalance(balance, "Enter Deposit Amount")) return;
+        if (it->deposit(stod(balance))) {
+            cout << "\nDeposit successful!\n";
+            cout << "Deposited Amount: Rs. " << balance << '\n';
+        }
     }
     else {
         cout << "Account not found!\n";
