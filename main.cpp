@@ -146,6 +146,18 @@ public:
         return oss.str();
     }
 
+    void updateName(string& name) {
+        this->name = name;
+    }
+
+    void updateAccountType(string& accountType) {
+        this->accountType = accountType;
+    }
+
+    void updatePhoneNumber(string& phoneNumber) {
+        this->phoneNumber = phoneNumber;
+    }
+
     int getAccountNumber() const {
         return accountNumber;
     }
@@ -199,9 +211,9 @@ bool readAccountInfo(vector<Account>& users);
 // Sub account functions
 void readStr(string& str, string type);
 int readAccountNumber(const vector<Account>& acc, bool isSearch = false);
-string readPhoneNumber(const vector<Account>& acc);
+string readPhoneNumber(const vector<Account>& acc, int accNumber);
 // Helper function to valid phone number
-bool isUniquePhoneNumber(const vector<Account>& acc, const string& ph);
+bool isUniquePhoneNumber(const vector<Account>& acc, const string& ph, int currentAccountNumber);
 bool isValidPhoneNumber(const string& ph);
 // Get valid Balence
 bool readBalance(string& balance, const string& name);
@@ -214,7 +226,10 @@ void searchAccount(const vector<Account>& users);
 void withdrawalMoney(vector<Account>& users);
 void depositeMoney(vector<Account>& users);
 
-// Update & Delete function 
+// Update & Delete function
+void updateAccount(vector<Account>& users);
+void updateMenu();
+bool updateProcess(Account& user, const vector<Account>& users);
 void deleteAccount(vector<Account>& users);
 
 int main() {
@@ -232,7 +247,6 @@ int main() {
 }
 
 void ui() {
-    //cout << "\n";
     cout << "========================================\n";
     cout << "        BANK MANAGEMENT SYSTEM\n";
     cout << "========================================\n";
@@ -251,7 +265,7 @@ void ui() {
     cout << "-------------------------------------------------\n";
 }
 
-int readUserChoice() {
+int readUserChoice(const int& length) {
     int attempt = 0;
     int choice = 0;
 
@@ -263,7 +277,7 @@ int readUserChoice() {
             return 0;
         }
 
-        cout << "Enter your choice (1-9): ";
+        cout << "Enter your choice (1-" << length << "): ";
         cin >> choice;
 
         // Clear the entire input buffer
@@ -279,9 +293,9 @@ int readUserChoice() {
             continue;
         }
 
-        if (choice < 1 || choice > 9) {
+        if (choice < 1 || choice > length) {
             if(attempt < 3) {
-                cout << "Invalid choice! Enter a number between 1 and 9.\n\n";
+                cout << "Invalid choice! Enter a number between 1 and " << length << ".\n\n";
             }
             continue;
         }
@@ -294,7 +308,7 @@ int readUserChoice() {
 
 int processData(vector<Account>& users) {
     ui();
-    int choice = readUserChoice();
+    int choice = readUserChoice(9);
 
     switch (choice) {
     case 1: {
@@ -321,7 +335,7 @@ int processData(vector<Account>& users) {
         break;
     }
     case 6: {
-        cout << "Update Account\n";
+        updateAccount(users);
         break;
     }
     case 7: {
@@ -333,7 +347,7 @@ int processData(vector<Account>& users) {
         cout << "Total Bank Accounts: " << Account::getTotalAccount() << endl;
         cout << "Total Bank Balance: " << Account::getTotalBalance() << endl;
         cout << endl;
-        
+
         break;
     }
     case 9: {
@@ -430,7 +444,7 @@ bool readDataInFile(vector<Account>& users) {
 // Read valid account details
 bool readAccountInfo(vector<Account>& users) {
     tempAccount accData;
-    
+
     cout << endl;
     readStr(accData.name, "Name");
     int accNum = readAccountNumber(users);
@@ -442,7 +456,7 @@ bool readAccountInfo(vector<Account>& users) {
     accData.accountNumber = accNum;
     readStr(accData.accountType, "Account Type");
     readStr(accData.address, "Address");
-    string result = readPhoneNumber(users);
+    string result = readPhoneNumber(users, accData.accountNumber);
 
     if(result == "error") return false;
     accData.phoneNumber = result;
@@ -537,7 +551,7 @@ int readAccountNumber(const vector<Account>& acc, bool isSearch) {
     return accNumber;
 }
 
-string readPhoneNumber(const vector<Account>& acc) {
+string readPhoneNumber(const vector<Account>& acc, int accNumber) {
     int attempt = 0;
     string phone;
 
@@ -560,7 +574,7 @@ string readPhoneNumber(const vector<Account>& acc) {
             continue;
         }
 
-        if(!isUniquePhoneNumber(acc, phone)) {
+        if(!isUniquePhoneNumber(acc, phone, accNumber)) {
             if(attempt < 3) {
                 cout << "Phone number already exists!\n\n";
             }
@@ -586,9 +600,11 @@ bool isValidPhoneNumber(const string& ph) {
     return true;
 }
 
-bool isUniquePhoneNumber(const vector<Account>& acc, const string& ph) {
+bool isUniquePhoneNumber(const vector<Account>& acc,
+                         const string& ph, int currentAccountNumber) {
     for(const auto& account : acc) {
-        if(account.getPhoneNumber() == ph) return false;
+        if(account.getAccountNumber() != currentAccountNumber &&
+                account.getPhoneNumber() == ph) return false;
     }
     return true;
 }
@@ -732,7 +748,77 @@ void depositeMoney(vector<Account>& users) {
     cout << endl;
 }
 
-// Update & Delete function 
+// Update & Delete function
+void updateAccount(vector<Account>& users) {
+    cout << endl;
+
+    if (users.empty()) {
+        cout << "No account is available to update!\n";
+        return;
+    }
+
+    int accNumber = readAccountNumber(users, true);
+    if (accNumber == -1) return;
+
+    auto it = lower_bound(
+                  users.begin(),
+                  users.end(),
+                  accNumber,
+    [](const Account& account, int accNumber) {
+        return account.getAccountNumber() < accNumber;
+    });
+
+    if (it != users.end() && it->getAccountNumber() == accNumber) {
+        updateMenu();
+        if(!updateProcess(*it, users)) return;
+        cout << "Account updated successfully!\n";
+    }
+    else {
+        cout << "Account not found!\n";
+    }
+    cout << endl;
+}
+
+void updateMenu() {
+    cout << "\n========== UPDATE ACCOUNT ==========\n";
+    cout << "1. Update Account Holder Name\n";
+    cout << "2. Update Phone Number\n";
+    cout << "3. Update Account Type\n";
+    cout << "4. Back to Main Menu\n";
+    cout << "====================================\n";
+}
+
+bool updateProcess(Account& user, const vector<Account>& users) {
+    int choice = readUserChoice(4);
+    string str;
+
+    switch (choice) {
+    case 1: {
+        readStr(str, "Name");
+        if(str.length() == 0) return false;
+        user.updateName(str);
+        break;
+    }
+    case 2: {
+        str = readPhoneNumber(users, user.getAccountNumber());
+        if(str == "error") return false;
+        user.updatePhoneNumber(str);
+        break;
+    }
+    case 3: {
+        readStr(str, "Account Type");
+        if(str.length() == 0) return false;
+        user.updateAccountType(str);
+        break;
+    }
+    default: {
+        return false;
+    }
+    }
+
+    return true;
+}
+
 void deleteAccount(vector<Account>& users) {
     cout << endl;
 
@@ -745,16 +831,15 @@ void deleteAccount(vector<Account>& users) {
     if (accNumber == -1) return;
 
     auto it = lower_bound(
-        users.begin(),
-        users.end(),
-        accNumber,
-        [](const Account& account, int accNumber) {
-            return account.getAccountNumber() < accNumber;
-        }
-    );
+                  users.begin(),
+                  users.end(),
+                  accNumber,
+    [](const Account& account, int accNumber) {
+        return account.getAccountNumber() < accNumber;
+    });
 
     if (it != users.end() &&
-        it->getAccountNumber() == accNumber) {
+            it->getAccountNumber() == accNumber) {
         Account::deleteAcc(*it);
         users.erase(it);
 
@@ -764,3 +849,4 @@ void deleteAccount(vector<Account>& users) {
         cout << "Account not found!\n";
     }
 }
+
